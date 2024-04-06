@@ -85,7 +85,7 @@ class AuthenticateSession
         }
 
         $request->session()->put([
-            "password_hash_{$guard}" => $request->user()->getAuthPassword(),
+            "password_hash_{$guard}" => auth($guard)->user()->getAuthPassword(),
         ]);
     }
 }
