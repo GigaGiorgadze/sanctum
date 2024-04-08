@@ -13,7 +13,8 @@ use Workbench\Database\Factories\UserFactory;
 
 class FrontendRequestsAreStatefulTest extends TestCase
 {
-    use RefreshDatabase, WithWorkbench;
+    use RefreshDatabase;
+    use WithWorkbench;
 
     protected function defineEnvironment($app)
     {
@@ -57,6 +58,13 @@ class FrontendRequestsAreStatefulTest extends TestCase
 
             return $request->user()->email;
         })->middleware($webMiddleware);
+
+        $router->get('/sanctum/api/logout', function () {
+            auth()->guard('web')->logout();
+            session()->flush();
+
+            return 'logged out';
+        })->middleware($apiMiddleware);
     }
 
     public function test_middleware_keeps_session_logged_in_when_sanctum_request_changes_password()
@@ -141,6 +149,28 @@ class FrontendRequestsAreStatefulTest extends TestCase
         $this->getJson('/sanctum/web/user', [
             'origin' => config('app.url'),
         ])->assertStatus(401);
+    }
+
+    public function test_middleware_removes_password_hash_after_session_is_cleared_during_request()
+    {
+        $user = UserFactory::new()->create();
+
+        $this->actingAs($user)
+        ->getJson('/web/user', [
+            'origin' => config('app.url'),
+        ])
+        ->assertOk()
+        ->assertSee($user->email);
+
+        $this->getJson('/sanctum/web/user', [
+            'origin' => config('app.url'),
+        ])
+        ->assertOk()
+        ->assertSee($user->email)->assertSessionHas('password_hash_web', $user->getAuthPassword());
+
+        $this->getJson('/sanctum/api/logout', [
+            'origin' => config('app.url'),
+        ])->assertOk()->assertSee('logged out')->assertSessionMissing('password_hash_web');
     }
 
     public static function sanctumGuardsDataProvider()
