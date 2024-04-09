@@ -65,6 +65,7 @@ class AuthenticateSession
 
         return tap($next($request), function () use ($request, $guards) {
             $guard = $guards->keys()->first();
+
             if ($this->auth->guard($guard)->hasUser()) {
                 $this->storePasswordHashInSession($request, $guard);
             }
