@@ -64,9 +64,8 @@ class AuthenticateSession
         }
 
         return tap($next($request), function () use ($request, $guards) {
-            $guard = $guards->keys()->first();
-
-            if ($this->auth->guard($guard)->hasUser()) {
+            $guard = $this->getUsersGuard($guards->keys());
+            if (! is_null($guard)) {
                 $this->storePasswordHashInSession($request, $guard);
             }
         });
@@ -81,6 +80,7 @@ class AuthenticateSession
      */
     protected function storePasswordHashInSession($request, string $guard)
     {
+
         if (! $this->auth->guard($guard)->hasUser()) {
             return;
         }
@@ -88,5 +88,10 @@ class AuthenticateSession
         $request->session()->put([
             "password_hash_{$guard}" => $this->auth->guard($guard)->user()->getAuthPassword(),
         ]);
+    }
+
+    protected function getUsersGuard(Collection $guards): string|null
+    {
+        return $guards->first(fn ($guard) => $this->auth->guard($guard)->hasUser());
     }
 }
