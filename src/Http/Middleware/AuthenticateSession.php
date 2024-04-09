@@ -80,7 +80,6 @@ class AuthenticateSession
      */
     protected function storePasswordHashInSession($request, string $guard)
     {
-
         if (! $this->auth->guard($guard)->hasUser()) {
             return;
         }
