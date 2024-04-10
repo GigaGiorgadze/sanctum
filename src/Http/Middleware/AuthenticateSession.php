@@ -78,7 +78,12 @@ class AuthenticateSession
      */
     protected function getFirstGuardWithUser(Collection $guards)
     {
-        return $guards->first(fn ($guard) => $this->auth->guard($guard)->hasUser());
+        return $guards->first(function ($guard) {
+            $guardInstance = $this->auth->guard($guard);
+
+            return method_exists($guardInstance, 'hasUser') &&
+                   $guardInstance->hasUser();
+        });
     }
 
     /**
