@@ -64,11 +64,23 @@ class AuthenticateSession
         }
 
         return tap($next($request), function () use ($request, $guards) {
-            $guard = $this->getUsersGuard($guards->keys());
+            $guard = $this->getFirstGuardWithUser($guards->keys());
+
             if (! is_null($guard)) {
                 $this->storePasswordHashInSession($request, $guard);
             }
         });
+    }
+
+    /**
+     * Get the first authentication guard that has a user.
+     *
+     * @param  \Illuminate\Support\Collection  $guards
+     * @return string|null
+     */
+    protected function getFirstGuardWithUser(Collection $guards)
+    {
+        return $guards->first(fn ($guard) => $this->auth->guard($guard)->hasUser());
     }
 
     /**
@@ -87,10 +99,5 @@ class AuthenticateSession
         $request->session()->put([
             "password_hash_{$guard}" => $this->auth->guard($guard)->user()->getAuthPassword(),
         ]);
-    }
-
-    protected function getUsersGuard(Collection $guards): string|null
-    {
-        return $guards->first(fn ($guard) => $this->auth->guard($guard)->hasUser());
     }
 }
